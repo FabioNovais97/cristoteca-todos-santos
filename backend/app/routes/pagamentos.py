@@ -3,7 +3,7 @@ import os
 import requests
 
 from urllib.parse import urlencode
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from dotenv import load_dotenv
 
 from app.database import supabase
@@ -22,6 +22,9 @@ MERCADO_PAGO_SEARCH_URL = (
     "https://api.mercadopago.com/v1/payments/search"
 )
 
+MERCADO_PAGO_PAYMENT_URL = (
+    "https://api.mercadopago.com/v1/payments"
+)
 
 def obter_token():
     token = os.getenv("MERCADO_PAGO_ACCESS_TOKEN")
@@ -83,6 +86,10 @@ def criar_checkout(pedido_id: str):
                 "email": pedido["email"],
             },
             "external_reference": str(pedido["id"]),
+            "notification_url": (
+        "https://cristoteca-todos-santos.onrender.com"
+        "/api/pagamentos/webhook"
+    ),
         }
 
         # URLs de retorno só são enviadas quando o frontend
@@ -357,4 +364,89 @@ def consultar_status_pagamento(pedido_id: str):
                 "Erro interno ao consultar o pagamento "
                 "ou liberar ingressos."
             ),
+        )
+
+@router.post("/webhook")
+async def receber_webhook_mercado_pago(request: Request):
+    """
+    Recebe notificações do Mercado Pago e consulta a API oficial
+    antes de confirmar o pedido.
+    """
+    try:
+        body = await request.json()
+
+        tipo = (
+            request.query_params.get("type")
+            or request.query_params.get("topic")
+            or body.get("type")
+            or body.get("topic")
+        )
+
+        dados = body.get("data") or {}
+        pagamento_id = (
+            request.query_params.get("data.id")
+            or dados.get("id")
+        )
+
+        # Ignora eventos que não são notificações de pagamento.
+        if tipo != "payment" or not pagamento_id:
+            return {"recebido": True, "processado": False}
+
+        token = obter_token()
+
+        # Confere o pagamento diretamente na API do Mercado Pago.
+        resposta = requests.get(
+            f"{MERCADO_PAGO_PAYMENT_URL}/{pagamento_id}",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=20,
+        )
+
+        if resposta.status_code != 200:
+            print(
+                "Falha ao consultar pagamento do webhook:",
+                resposta.status_code,
+                resposta.text,
+            )
+            raise HTTPException(
+                status_code=502,
+                detail="Não foi possível validar a notificação.",
+            )
+
+        pagamento = resposta.json()
+
+        # Só continua se o pagamento estiver aprovado.
+        if pagamento.get("status") != "approved":
+            return {
+                "recebido": True,
+                "processado": False,
+                "status_pagamento": pagamento.get("status"),
+            }
+
+        pedido_id = pagamento.get("external_reference")
+
+        if not pedido_id:
+            print(
+                "Pagamento sem external_reference:",
+                pagamento_id,
+            )
+            return {"recebido": True, "processado": False}
+
+        # Reutiliza a rotina existente, que valida valor,
+        # pedido e quantidade antes de liberar os ingressos.
+        resultado = consultar_status_pagamento(str(pedido_id))
+
+        return {
+            "recebido": True,
+            "processado": (
+                resultado.get("status_pedido") == "pago"
+            ),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as erro:
+        print(f"Erro ao processar webhook do Mercado Pago: {erro!r}")
+        raise HTTPException(
+            status_code=500,
+            detail="Erro interno ao processar a notificação.",
         )
