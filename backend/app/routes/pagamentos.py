@@ -259,6 +259,8 @@ def consultar_status_pagamento(pedido_id: str):
             .execute()
         )
 
+        print("Consulta de pagamento no Supabase concluída.")
+
         dados_pagamento = {
             "pedido_id": str(pedido_id),
             "mercado_pago_id": pagamento_id,
@@ -286,6 +288,8 @@ def consultar_status_pagamento(pedido_id: str):
                 .insert(dados_pagamento)
                 .execute()
             )
+
+        print("Registro de pagamento salvo no Supabase.")
 
         supabase.table("cristoteca_pedidos").update({
             "status": "pago",
