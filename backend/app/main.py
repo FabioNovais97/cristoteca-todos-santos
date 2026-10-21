@@ -1,6 +1,7 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.routes import pagamentos
 from app.routes.pedidos import router as pedidos_router
 from app.routes.ingressos import router as ingressos_router
@@ -14,9 +15,13 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "https://cristoteca-todos-santos.vercel.app",
+        "https://cristoteca-todos-santos-iyg6-bikv8f510-fabio1997.vercel.app",
+    ],
     allow_credentials=False,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
@@ -24,6 +29,7 @@ app.include_router(pedidos_router)
 app.include_router(pagamentos.router)
 app.include_router(ingressos_router)
 app.include_router(validacao_router)
+
 
 @app.get("/api/health")
 def health():
@@ -43,4 +49,3 @@ def evento():
         "preco_centavos": 500,
         "moeda": "BRL",
     }
-
