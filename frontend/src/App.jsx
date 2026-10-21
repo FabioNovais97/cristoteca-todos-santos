@@ -133,7 +133,7 @@ export default function App() {
             nome_comprador: name.trim(),
             email: email.trim().toLowerCase(),
             telefone: phone.trim() || null,
-            quantidade,
+            quantidade: quantity,
           }),
         }
       );
