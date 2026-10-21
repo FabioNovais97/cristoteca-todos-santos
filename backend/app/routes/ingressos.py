@@ -251,11 +251,11 @@ def gerar_pdf(pedido: dict, ingressos: list) -> BytesIO:
 
         pdf.setFillColor(BRANCO)
         pdf.roundRect(
-            x_qr - 12,
-            y_qr - 12,
-            tamanho_qr + 24,
-            tamanho_qr + 24,
-            10,
+            x_qr - 4,
+            y_qr - 4,
+            tamanho_qr + 8,
+            tamanho_qr + 8,
+            6,
             fill=1,
             stroke=0,
         )
