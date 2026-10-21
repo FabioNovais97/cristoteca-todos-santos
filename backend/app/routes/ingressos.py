@@ -245,9 +245,9 @@ def gerar_pdf(pedido: dict, ingressos: list) -> BytesIO:
 
         # QR Code em área branca para facilitar a leitura
         imagem_qr = gerar_qr(ingresso["codigo"])
-        tamanho_qr = 132
+        tamanho_qr = 120
         x_qr = (largura - tamanho_qr) / 2
-        y_qr = 105
+        y_qr = 112
 
         pdf.setFillColor(BRANCO)
         pdf.roundRect(
@@ -274,7 +274,7 @@ def gerar_pdf(pedido: dict, ingressos: list) -> BytesIO:
         pdf.setFont("Helvetica-Bold", 10)
         pdf.drawCentredString(
             largura / 2,
-            88,
+            96,
             "APRESENTE O QR CODE NA ENTRADA",
         )
 
