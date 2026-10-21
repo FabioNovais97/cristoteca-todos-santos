@@ -190,6 +190,8 @@ def consultar_status_pagamento(pedido_id: str):
             int(pedido["valor_total_centavos"]) / 100
         )
 
+        print("Consultando pagamentos no Mercado Pago:", pedido_id)
+
         resposta = requests.get(
             MERCADO_PAGO_SEARCH_URL,
             headers={
@@ -248,6 +250,8 @@ def consultar_status_pagamento(pedido_id: str):
 
         pagamento_id = str(aprovado["id"])
 
+        print("Mercado Pago consultado com sucesso; verificando Supabase.")
+
         pagamento_existente = (
             supabase.table("cristoteca_pagamentos")
             .select("id")
@@ -286,6 +290,8 @@ def consultar_status_pagamento(pedido_id: str):
         supabase.table("cristoteca_pedidos").update({
             "status": "pago",
         }).eq("id", pedido_id).execute()
+
+        print("Pedido atualizado; verificando ingressos no Supabase.")
 
         ingressos_existentes = (
             supabase.table("cristoteca_ingressos")
