@@ -366,12 +366,9 @@ def consultar_status_pagamento(pedido_id: str):
             ),
         )
 
+
 @router.post("/webhook")
 async def receber_webhook_mercado_pago(request: Request):
-    """
-    Recebe notificações do Mercado Pago e consulta a API oficial
-    antes de confirmar o pedido.
-    """
     try:
         body = await request.json()
 
@@ -388,18 +385,31 @@ async def receber_webhook_mercado_pago(request: Request):
             or dados.get("id")
         )
 
-        # Ignora eventos que não são notificações de pagamento.
+        # Notificação não relacionada a pagamento:
+        # recebe o evento sem realizar alterações.
         if tipo != "payment" or not pagamento_id:
-            return {"recebido": True, "processado": False}
+            return {"recebido": True}
 
         token = obter_token()
 
-        # Confere o pagamento diretamente na API do Mercado Pago.
         resposta = requests.get(
             f"{MERCADO_PAGO_PAYMENT_URL}/{pagamento_id}",
             headers={"Authorization": f"Bearer {token}"},
             timeout=20,
         )
+
+        # Simulações podem usar IDs fictícios.
+        # Não aprovar pedidos com base nesses eventos.
+        if resposta.status_code == 404:
+            print(
+                "Pagamento não encontrado; possível simulação:",
+                pagamento_id,
+            )
+            return {
+                "recebido": True,
+                "processado": False,
+                "motivo": "Pagamento ainda não encontrado.",
+            }
 
         if resposta.status_code != 200:
             print(
@@ -409,12 +419,11 @@ async def receber_webhook_mercado_pago(request: Request):
             )
             raise HTTPException(
                 status_code=502,
-                detail="Não foi possível validar a notificação.",
+                detail="Não foi possível validar o pagamento.",
             )
 
         pagamento = resposta.json()
 
-        # Só continua se o pagamento estiver aprovado.
         if pagamento.get("status") != "approved":
             return {
                 "recebido": True,
@@ -425,21 +434,13 @@ async def receber_webhook_mercado_pago(request: Request):
         pedido_id = pagamento.get("external_reference")
 
         if not pedido_id:
-            print(
-                "Pagamento sem external_reference:",
-                pagamento_id,
-            )
             return {"recebido": True, "processado": False}
 
-        # Reutiliza a rotina existente, que valida valor,
-        # pedido e quantidade antes de liberar os ingressos.
         resultado = consultar_status_pagamento(str(pedido_id))
 
         return {
             "recebido": True,
-            "processado": (
-                resultado.get("status_pedido") == "pago"
-            ),
+            "processado": resultado.get("status_pedido") == "pago",
         }
 
     except HTTPException:
