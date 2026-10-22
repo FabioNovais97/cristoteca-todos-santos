@@ -1,4 +1,5 @@
 
+import ValidarIngressos from './ValidarIngressos.jsx';
 import { useEffect, useState } from 'react';
 import {
   CalendarDays,
@@ -203,7 +204,12 @@ async function verifyPayment(pedidoId) {
       );
     } finally {
       setLoading(false);
-    }
+    }  
+  }
+  if (
+    window.location.pathname.replace(/\/$/, '') === '/validar-ingressos'
+  ) {
+    return <ValidarIngressos />;
   }
 
   return (
