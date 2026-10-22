@@ -34,6 +34,7 @@ export default function App() {
   const [paymentResult, setPaymentResult] = useState(null);
   const [paymentError, setPaymentError] = useState('');
   const [checkingPayment, setCheckingPayment] = useState(false);
+  const [paymentCheckKey, setPaymentCheckKey] = useState(0);
 
   const money = (cents) =>
     (cents / 100).toLocaleString('pt-BR', {
@@ -41,16 +42,20 @@ export default function App() {
       currency: 'BRL',
     });
 
-  async function verifyPayment(pedidoId) {
-    if (!pedidoId || checkingPayment) return;
 
-    setCheckingPayment(true);
-    setPaymentError('');
-    setPaymentResult(null);
 
-    try {
+async function verifyPayment(pedidoId) {
+  if (!pedidoId) return;
+
+  setCheckingPayment(true);
+  setPaymentError('');
+  setPaymentResult(null);
+
+  try {
+    for (let tentativa = 1; tentativa <= 10; tentativa++) {
       const response = await fetch(
-        `${API_URL}/api/pagamentos/pedido/${pedidoId}/status`
+        `${API_URL}/api/pagamentos/pedido/${pedidoId}/status`,
+        { cache: 'no-store' }
       );
 
       const data = await response.json();
@@ -65,44 +70,53 @@ export default function App() {
         data.status_pagamento === 'aprovado' &&
         data.status_pedido === 'pago'
       ) {
-        setPaymentResult(data);
+        setReturnedOrderId(pedidoId);
+        setPaymentResult({
+          ...data,
+          pedido_id: data.pedido_id || pedidoId,
+        });
         setPaymentError('');
+        return;
+      }
+
+      if (tentativa < 10) {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
       } else {
         setPaymentError(
-          data.mensagem ||
-            'O pagamento ainda não foi confirmado. Aguarde um pouco e tente novamente.'
+          'Ainda estamos aguardando a confirmação. Clique abaixo para consultar novamente.'
         );
       }
-    } catch (error) {
-      console.error('Erro ao verificar pagamento:', error);
-
-      setPaymentError(
-        error.message ||
-          'Não foi possível verificar o pagamento. Tente novamente.'
-      );
-    } finally {
-      setCheckingPayment(false);
     }
+  } catch (error) {
+    console.error('Erro ao verificar pagamento:', error);
+    setPaymentError(
+      error.message || 'Não foi possível verificar o pagamento.'
+    );
+  } finally {
+    setCheckingPayment(false);
   }
+}
+
+
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const pedidoId = params.get('pedido_id');
-    const retorno = params.get('retorno');
+  const params = new URLSearchParams(window.location.search);
+  const pedidoId = params.get('pedido_id');
+  const retorno = params.get('retorno');
 
-    if (!pedidoId) return;
+  if (!pedidoId) return;
 
-    setReturnedOrderId(pedidoId);
+  setReturnedOrderId(pedidoId);
 
-    if (retorno === 'falha') {
-      setPaymentError(
-        'O pagamento não foi concluído. Você pode verificar novamente ou tentar realizar uma nova compra.'
-      );
-      return;
-    }
+  if (retorno === 'falha') {
+    setPaymentError(
+      'O pagamento não foi concluído. Você pode verificar novamente ou tentar realizar uma nova compra.'
+    );
+    return;
+  }
 
-    verifyPayment(pedidoId);
-  }, []);
+  verifyPayment(pedidoId);
+}, []);
 
   async function startPurchase(event) {
     event.preventDefault();
