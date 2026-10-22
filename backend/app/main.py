@@ -16,7 +16,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://cristoteca-todos-santos(-[a-z0-9-]+)?-fabio1997\.vercel\.app|https://cristoteca-todos-santos\.vercel\.app",
+    allow_origin_regex=r"https://cristoteca-todos-santos-[a-z0-9-]+-fabio1997\.vercel\.app",
     allow_origins=[
         "http://localhost:5173",
         "https://cristoteca-todos-santos.vercel.app",
