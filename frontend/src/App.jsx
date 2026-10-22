@@ -19,10 +19,14 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
+
 const API_URL = (
-  import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+  import.meta.env.VITE_API_URL ||
+  'https://cristoteca-todos-santos.onrender.com'
 ).replace(/\/$/, '');
+
 const PRICE_CENTS = 500;
+
 
 export default function App() {
   const [quantity, setQuantity] = useState(1);
