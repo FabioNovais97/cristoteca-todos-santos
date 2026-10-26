@@ -40,6 +40,7 @@ export default function App() {
   const [paymentError, setPaymentError] = useState('');
   const [checkingPayment, setCheckingPayment] = useState(false);
   const [paymentCheckKey, setPaymentCheckKey] = useState(0);
+  const [restoringOrder, setRestoringOrder] = useState(true);
 
   const money = (cents) =>
     (cents / 100).toLocaleString('pt-BR', {
@@ -109,18 +110,24 @@ async function verifyPayment(pedidoId) {
   const pedidoId = params.get('pedido_id');
   const retorno = params.get('retorno');
 
-  if (!pedidoId) return;
+  if (!pedidoId) {
+    setRestoringOrder(false);
+    return;
+  }
 
   setReturnedOrderId(pedidoId);
 
   if (retorno === 'falha') {
     setPaymentError(
-      'O pagamento não foi concluído. Você pode verificar novamente ou tentar realizar uma nova compra.'
+      'O pagamento não foi concluído. Você pode verificar novamente.'
     );
+    setRestoringOrder(false);
     return;
   }
 
-  verifyPayment(pedidoId);
+  verifyPayment(pedidoId).finally(() => {
+    setRestoringOrder(false);
+  });
 }, []);
 
   async function startPurchase(event) {
@@ -330,9 +337,15 @@ async function verifyPayment(pedidoId) {
       </section>
 
       <section className="buy-section" id="ingressos">
-        {paymentResult ? (
-          <div className="buy-card payment-message">
-            <CheckCircle size={48} />
+        {restoringOrder ? (
+  <div className="buy-card payment-message">
+    <RefreshCw size={32} />
+    <h2>Recuperando seu ingresso...</h2>
+    <p>Estamos verificando seu pedido. Aguarde um instante.</p>
+  </div>
+) : paymentResult ? (
+  <div className="buy-card payment-message">
+    <CheckCircle size={48} />
 
             <h2>Pagamento confirmado!</h2>
 
