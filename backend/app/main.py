@@ -20,6 +20,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "https://cristoteca-todos-santos.vercel.app",
+        "https://cristoteca-todos-santos-iyg6.vercel.app",
         "https://cristoteca-todos-santos-iyg6-bikv8f510-fabio1997.vercel.app",
         "https://cristoteca-todos-santos-g9nk78yco-fabio1997.vercel.app",
     ],
