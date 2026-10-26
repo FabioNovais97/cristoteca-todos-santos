@@ -143,8 +143,8 @@ def criar_checkout(pedido_id: str):
         dados = resposta.json()
 
         link_pagamento = (
-            dados.get("sandbox_init_point")
-            or dados.get("init_point")
+            dados.get("init_point"),
+            
         )
 
         if not link_pagamento:
